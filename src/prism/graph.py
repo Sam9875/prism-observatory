@@ -6,6 +6,7 @@ from typing import Literal, TypedDict
 from langgraph.graph import END, START, StateGraph
 
 from prism.index import PrismIndex
+from prism.rails import screen_input, screen_output
 from prism.synthesize import REFUSAL, synthesize
 from prism.textutil import content_tokens, coverage
 from prism.types import Hit, LensResult
@@ -65,6 +66,36 @@ def _trace(state: PrismState, node: str, detail: str) -> list[dict]:
 
 
 def build_aurora(index: PrismIndex):
+    def input_guard(state: PrismState) -> dict:
+        report = screen_input(state["question"])
+        update = {"trace": _trace(state, "input_guard", report.detail)}
+        if not report.passed:
+            update.update(
+                {
+                    "route": "blocked",
+                    "answer": report.message,
+                    "citations": [],
+                    "supported": False,
+                    "documents": [],
+                    "graded": [],
+                }
+            )
+        return update
+
+    def output_guard(state: PrismState) -> dict:
+        chunks = list(state.get("graded") or state.get("documents") or [])
+        report = screen_output(state.get("answer") or "", list(state.get("citations") or []), chunks)
+        update = {
+            "answer": report.text or state.get("answer") or "",
+            "trace": _trace(state, "output_guard", report.detail),
+        }
+        if report.citations is not None:
+            update["citations"] = report.citations
+        if not report.passed:
+            update["supported"] = False
+            update["citations"] = []
+        return update
+
     def router(state: PrismState) -> dict:
         route = classify(index, state["question"])
         return {"route": route, "retries": state.get("retries") or 0, "trace": _trace(state, "router", f"Classified the question as {route}.")}
@@ -138,6 +169,11 @@ def build_aurora(index: PrismIndex):
             "trace": _trace(state, "abstain", "The question has no foothold in the three archives."),
         }
 
+    def after_input(state: PrismState) -> Literal["router", "end"]:
+        if state.get("route") == "blocked":
+            return "end"
+        return "router"
+
     def after_router(state: PrismState) -> Literal["planner", "retrieve", "abstain"]:
         route = state.get("route")
         if route == "abstain":
@@ -158,6 +194,7 @@ def build_aurora(index: PrismIndex):
         return "synthesize"
 
     graph = StateGraph(PrismState)
+    graph.add_node("input_guard", input_guard)
     graph.add_node("router", router)
     graph.add_node("planner", planner)
     graph.add_node("retrieve", retrieve)
@@ -166,14 +203,17 @@ def build_aurora(index: PrismIndex):
     graph.add_node("synthesize", synthesize_node)
     graph.add_node("verify", verify)
     graph.add_node("abstain", abstain)
-    graph.add_edge(START, "router")
+    graph.add_node("output_guard", output_guard)
+    graph.add_edge(START, "input_guard")
+    graph.add_conditional_edges("input_guard", after_input, {"router": "router", "end": END})
     graph.add_conditional_edges("router", after_router, {"planner": "planner", "retrieve": "retrieve", "abstain": "abstain"})
     graph.add_edge("planner", "retrieve")
     graph.add_edge("retrieve", "grade")
     graph.add_conditional_edges("grade", after_grade, {"rewrite": "rewrite", "synthesize": "synthesize"})
     graph.add_edge("rewrite", "retrieve")
     graph.add_edge("synthesize", "verify")
-    graph.add_edge("verify", END)
+    graph.add_edge("verify", "output_guard")
+    graph.add_edge("output_guard", END)
     graph.add_edge("abstain", END)
     return graph.compile()
 
