@@ -1,0 +1,11 @@
+.venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+.herenow/
+*.egg-info/
+dist/
+build/
+.env
+.python-version
+node_modules/
