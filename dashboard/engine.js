@@ -435,6 +435,119 @@
     };
   }
 
+  const INJECTION = [
+    /ignore\s+(?:all\s+)?(?:previous|prior|above)\s+(?:instructions|prompts|rules)/i,
+    /disregard\s+(?:the\s+)?(?:system|previous|prior)/i,
+    /you\s+are\s+now/i,
+    /\bjailbreak\b/i,
+    /system\s+prompt/i,
+    /reveal\s+(?:your|the)\s+(?:system\s+)?(?:prompt|instructions)/i,
+    /do\s+anything\s+now/i,
+    /\bDAN\b/i,
+    /developer\s+mode/i,
+    /bypass\s+(?:the\s+)?(?:guard|rail|filter|safety)/i,
+  ];
+  const EMAIL = /[A-Z0-9._%+\-]+@[A-Z0-9.\-]+\.[A-Z]{2,}/i;
+  const SSN = /\b\d{3}-\d{2}-\d{4}\b/;
+  const CARD = /\b\d{4}[ -]?\d{4}[ -]?\d{4}[ -]?\d{4}\b/;
+  const PHONE = /\b(?:\+?\d{1,3}[-.\s])?\(?\d{3}\)?[-.\s]\d{3}[-.\s]\d{4}\b/;
+  const CITE_SPLIT = /(.*?)\[(\d+)\]/g;
+  const BLOCKED = {
+    empty: "PRISM stopped this at the input rail. The question was empty.",
+    length: "PRISM stopped this at the input rail. Ask one question in 400 characters or fewer.",
+    injection: "PRISM stopped this at the input rail. The question tries to override the observatory instructions, so nothing was retrieved.",
+    pii: "PRISM stopped this at the input rail. The question contains personal data such as an email, phone number, or account number. Remove it and ask again.",
+    grounding: "PRISM stopped this at the output rail. The draft answer was not supported by the cited passages.",
+  };
+
+  function norm(text) {
+    return String(text || "").split(/\s+/).join(" ").trim();
+  }
+
+  function screenInput(question) {
+    const text = String(question || "").trim();
+    if (!text) return { passed: false, rail: "empty", message: BLOCKED.empty, detail: "Input rail blocked an empty question." };
+    if (text.length > 400) return { passed: false, rail: "length", message: BLOCKED.length, detail: "Input rail blocked a question over 400 characters." };
+    for (let i = 0; i < INJECTION.length; i += 1) {
+      if (INJECTION[i].test(text)) return { passed: false, rail: "injection", message: BLOCKED.injection, detail: "Input rail blocked an instruction-override attempt." };
+    }
+    if (EMAIL.test(text) || SSN.test(text) || CARD.test(text) || PHONE.test(text)) {
+      return { passed: false, rail: "pii", message: BLOCKED.pii, detail: "Input rail blocked personal data in the question." };
+    }
+    return { passed: true, rail: "clear", message: "", detail: "Input rail passed. No override attempt or personal data." };
+  }
+
+  function screenOutput(answer, citations, chunks) {
+    const text = answer || "";
+    if (!String(text).trim() || String(text).indexOf("PRISM stopped this") === 0 || String(text).indexOf("does not have grounded material") !== -1) {
+      return { passed: true, rail: "clear", message: "", text: text, detail: "Output rail passed. The refusal is an allowed result.", citations: citations };
+    }
+    const byId = {};
+    (chunks || []).forEach(function (chunk) {
+      const id = chunk.chunk_id || chunk.id;
+      if (id) byId[id] = chunk.text || "";
+    });
+    const comparative = String(text).indexOf("Set side by side") === 0;
+    let body = String(text).replace(/^Set side by side, the archives say this\.\s*/, "");
+    body = body.replace(/\s*Grounded in \d+ passage\(s\)\.\s*$/, "");
+    const keptSentences = [];
+    const keptCitations = [];
+    const seen = {};
+    let dropped = 0;
+    const matches = Array.from(body.matchAll(new RegExp(CITE_SPLIT.source, "g")));
+    if (!matches.length) dropped = 1;
+    matches.forEach(function (match) {
+      const number = Number(match[2]);
+      const bare = norm(match[1]);
+      const citation = (citations || []).filter(function (item) { return item.n === number; })[0];
+      const passage = citation ? (byId[citation.chunk_id] || "") : "";
+      if (citation && bare && norm(passage).indexOf(bare) >= 0) {
+        if (!seen[citation.chunk_id]) {
+          seen[citation.chunk_id] = keptCitations.length + 1;
+          const copy = Object.assign({}, citation);
+          copy.n = seen[citation.chunk_id];
+          keptCitations.push(copy);
+        }
+        keptSentences.push(bare + " [" + seen[citation.chunk_id] + "]");
+      } else {
+        dropped += 1;
+      }
+    });
+    if (!keptSentences.length) {
+      return { passed: false, rail: "grounding", message: BLOCKED.grounding, text: BLOCKED.grounding, detail: "Output rail rejected an answer that was not in the cited passages.", citations: [] };
+    }
+    const prefix = comparative ? "Set side by side, the archives say this. " : "";
+    const repaired = prefix + keptSentences.join(" ") + "\n\nGrounded in " + keptCitations.length + " passage(s).";
+    if (dropped) {
+      return { passed: true, rail: "repaired", message: "", text: repaired, detail: "Output rail removed " + dropped + " sentence(s) that were not in the cited passages.", citations: keptCitations };
+    }
+    return { passed: true, rail: "clear", message: "", text: text, detail: "Output rail passed. Every cited sentence is in its passage.", citations: citations };
+  }
+
+  function blockedResult(lens, question, incoming, started) {
+    return {
+      lens: lens,
+      question: question,
+      route: "blocked",
+      answer: incoming.message,
+      citations: [],
+      chunks: [],
+      trace: [{ node: "input_guard", detail: incoming.detail }],
+      supported: false,
+      metrics: {
+        retries: 0,
+        relevant: 0,
+        retrieved: 0,
+        latencyMs: Date.now() - started,
+        contextPrecision: 0,
+        route: "blocked",
+        supported: false,
+        inputRail: incoming.rail,
+        outputRail: "skipped",
+      },
+    };
+  }
+
   function finish(lens, question, route, hits, trace, started, retries) {
     const written = synthesize(question, hits, route);
     const relevant = hits.filter(function (hit) { return hit.relevant; }).length;
@@ -455,6 +568,8 @@
         contextPrecision: hits.length ? relevant / hits.length : 0,
         route: route,
         supported: written.supported,
+        inputRail: "clear",
+        outputRail: "pending",
       },
     };
   }
@@ -463,6 +578,9 @@
     const started = Date.now();
     const trace = [];
     function note(node, detail) { trace.push({ node: node, detail: detail }); }
+    const incoming = screenInput(question);
+    if (!incoming.passed) return blockedResult("aurora", question, incoming, started);
+    note("input_guard", incoming.detail);
     const route = classify(index, question);
     note("router", "Classified the question as " + route + ".");
     if (route === "abstain") {
@@ -515,15 +633,28 @@
       note("verify", supported ? "Citations resolve to retrieved chunks." : "Answer is unsupported.");
     }
     const relevantCount = hits.filter(function (hit) { return hit.relevant; }).length;
+    const output = screenOutput(answer, written.citations, hits);
+    note("output_guard", output.detail);
+    let finalAnswer = answer;
+    let finalCitations = written.citations;
+    let finalSupported = supported;
+    if (!output.passed) {
+      finalAnswer = output.message;
+      finalCitations = [];
+      finalSupported = false;
+    } else if (output.rail === "repaired") {
+      finalAnswer = output.text;
+      finalCitations = output.citations;
+    }
     return {
       lens: "aurora",
       question: question,
       route: route,
-      answer: answer,
-      citations: written.citations,
+      answer: finalAnswer,
+      citations: finalCitations,
       chunks: hits,
       trace: trace,
-      supported: supported,
+      supported: finalSupported,
       metrics: {
         retries: retries,
         relevant: relevantCount,
@@ -531,7 +662,9 @@
         latencyMs: Date.now() - started,
         contextPrecision: hits.length ? relevantCount / hits.length : 0,
         route: route,
-        supported: supported,
+        supported: finalSupported,
+        inputRail: "clear",
+        outputRail: output.rail,
       },
     };
   }
@@ -543,15 +676,24 @@
     }
     if (choice === "aurora") return runAurora(index, question);
     const started = Date.now();
+    const incoming = screenInput(question);
+    if (!incoming.passed) return blockedResult(choice, question, incoming, started);
     const route = classify(index, question);
     if (route === "abstain") {
-      const trace = [{ node: choice, detail: "No archive foothold, so " + choice + " does not retrieve." }];
-      return finish(choice, question, route, [], trace, started, 0);
+      const trace = [
+        { node: "input_guard", detail: incoming.detail },
+        { node: choice, detail: "No archive foothold, so " + choice + " does not retrieve." },
+      ];
+      return applyOutput(finish(choice, question, route, [], trace, started, 0), []);
     }
     if (choice === "glass") {
       const hits = grade(question, hybridSearch(index, question, 6));
       const kept = hits.filter(function (hit) { return hit.relevant; }).length;
-      return finish("glass", question, route, hits, [{ node: "glass", detail: "Hybrid retrieval graded " + kept + " chunks relevant." }], started, 0);
+      const result = finish("glass", question, route, hits, [
+        { node: "input_guard", detail: incoming.detail },
+        { node: "glass", detail: "Hybrid retrieval graded " + kept + " chunks relevant." },
+      ], started, 0);
+      return applyOutput(result, hits);
     }
     const first = searchBalanced(index, question, 6);
     const terms = expandTerms(index, question, first, 4);
@@ -564,11 +706,29 @@
     const ordered = Array.from(merged.values()).sort(function (a, b) { return b.score - a.score; }).slice(0, 6);
     const hits = grade(question, ordered);
     const trace = [
+      { node: "input_guard", detail: incoming.detail },
       { node: "crystal", detail: "Balanced hybrid search on the original question." },
       { node: "crystal", detail: terms.length ? "Expanded once with " + terms.join(", ") + "." : "No neighbor terms to expand." },
       { node: "crystal", detail: "Merged to " + hits.length + " unique chunks." },
     ];
-    return finish("crystal", question, route, hits, trace, started, 0);
+    return applyOutput(finish("crystal", question, route, hits, trace, started, 0), hits);
+  }
+
+  function applyOutput(result, hits) {
+    const output = screenOutput(result.answer, result.citations, hits);
+    result.trace = result.trace.concat([{ node: "output_guard", detail: output.detail }]);
+    result.metrics.inputRail = "clear";
+    result.metrics.outputRail = output.rail;
+    if (!output.passed) {
+      result.answer = output.message;
+      result.supported = false;
+      result.citations = [];
+      result.metrics.supported = false;
+    } else if (output.rail === "repaired") {
+      result.answer = output.text;
+      result.citations = output.citations;
+    }
+    return result;
   }
 
   return {

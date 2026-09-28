@@ -200,6 +200,9 @@ th, td { border-bottom: 1px solid var(--line); text-align: left; padding: 8px 6p
 th { color: var(--muted); font-weight: 520; font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; }
 .ok { color: var(--sage); }
 .no { color: var(--coral); }
+.rail-banner { margin-top: 12px; padding: 10px 12px; border: 1px solid var(--sage); }
+.rail-banner.block { border-color: var(--coral); }
+.rail-banner strong { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 12px; letter-spacing: 0.06em; }
 .error {
   border: 1px solid var(--coral);
   padding: 14px;
