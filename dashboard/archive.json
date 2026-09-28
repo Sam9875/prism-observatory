@@ -149,6 +149,20 @@
       "text": "PRISM reports a few numbers on every run, as proxies in the spirit of RAGAS rather than as the RAGAS library itself. Context precision is the fraction of retrieved chunks the grader kept. A run that fetches six chunks and keeps one is less precise than a run that fetches four and keeps three, even if both eventually answer.\n\nThe support flag is stricter than a fluent paragraph. It is true only when the answer cites at least one passage that survived grading, and Aurora's verify node also checks that every citation chunk id exists in the index. Citation coverage counts the distinct documents those citations came from. A comparison that cites only one document can be supported and still be incomplete, which is why the balanced retriever exists.\n\nLatency is the wall time around the lens call, reported in milliseconds. The Bench view runs a fixed set of questions through Glass, Crystal, and Aurora and shows route, support, precision, and latency side by side. One question in that set sits outside every archive on purpose. A grounded system should refuse it."
     },
     {
+      "id": "guardrails",
+      "title": "PRISM Guardrails",
+      "archive": "neural",
+      "summary": "Two Guardrails AI checks stop unsafe questions before retrieval and unsupported sentences after synthesis.",
+      "entities": [
+        "Guardrails",
+        "input rail",
+        "output rail",
+        "InputSafety",
+        "GroundedOutput"
+      ],
+      "text": "PRISM puts two rails around every lens. They are Guardrails AI validators, registered as prism/input-safety and prism/grounded-output. Each one is attached to a Guard, and the guard's validate call is what decides. Aurora is a LangGraph, so the rails are real nodes: input_guard runs immediately after START, and output_guard runs after verify. Glass and Crystal call the same two guards even though they are not graphs.\n\nThe input rail runs before any retrieval. It blocks an empty question. It blocks a question longer than 400 characters. It blocks wording that tries to override the observatory, such as a request to discard earlier rules or to print a hidden prompt. It blocks personal data in the question: an email address, a phone number with separators, a long card-shaped number, or a three-two-four digit identifier. A blocked question returns a short refusal and an empty citation list. The archives are not searched.\n\nThe output rail runs after synthesis. It walks each cited sentence and keeps the sentence only when the same words appear in the passage named by that citation. A sentence that fails is removed, and the citation count is rewritten. If no cited sentence survives, the answer is replaced with a refusal from the output rail. A deliberate refusal, the one that says the archives do not contain grounded material, is allowed through. The rail does not invent a new fact to fill a gap.\n\nThe browser observatory applies the same decisions so the live page matches the Python package. The library call itself stays in Python, because that is where Guard.validate runs."
+    },
+    {
       "id": "hubble",
       "title": "Hubble Space Telescope",
       "archive": "orbital",
@@ -700,6 +714,66 @@
       ],
       "text": "The support flag is stricter than a fluent paragraph. It is true only when the answer cites at least one passage that survived grading, and Aurora's verify node also checks that every citation chunk id exists in the index. Citation coverage counts the distinct documents those citations came from. A comparison that cites only one document can be supported and still be incomplete, which is why the balanced retriever exists.\n\nLatency is the wall time around the lens call, reported in milliseconds. The Bench view runs a fixed set of questions through Glass, Crystal, and Aurora and shows route, support, precision, and latency side by side. One question in that set sits outside every archive on purpose. A grounded system should refuse it.",
       "index": 2
+    },
+    {
+      "id": "guardrails-0",
+      "doc_id": "guardrails",
+      "title": "PRISM Guardrails",
+      "archive": "neural",
+      "entities": [
+        "Guardrails",
+        "input rail",
+        "output rail",
+        "InputSafety",
+        "GroundedOutput"
+      ],
+      "text": "PRISM puts two rails around every lens. They are Guardrails AI validators, registered as prism/input-safety and prism/grounded-output. Each one is attached to a Guard, and the guard's validate call is what decides. Aurora is a LangGraph, so the rails are real nodes: input_guard runs immediately after START, and output_guard runs after verify. Glass and Crystal call the same two guards even though they are not graphs.",
+      "index": 0
+    },
+    {
+      "id": "guardrails-1",
+      "doc_id": "guardrails",
+      "title": "PRISM Guardrails",
+      "archive": "neural",
+      "entities": [
+        "Guardrails",
+        "input rail",
+        "output rail",
+        "InputSafety",
+        "GroundedOutput"
+      ],
+      "text": "PRISM puts two rails around every lens. They are Guardrails AI validators, registered as prism/input-safety and prism/grounded-output. Each one is attached to a Guard, and the guard's validate call is what decides. Aurora is a LangGraph, so the rails are real nodes: input_guard runs immediately after START, and output_guard runs after verify. Glass and Crystal call the same two guards even though they are not graphs.\n\nThe input rail runs before any retrieval. It blocks an empty question. It blocks a question longer than 400 characters. It blocks wording that tries to override the observatory, such as a request to discard earlier rules or to print a hidden prompt. It blocks personal data in the question: an email address, a phone number with separators, a long card-shaped number, or a three-two-four digit identifier. A blocked question returns a short refusal and an empty citation list. The archives are not searched.",
+      "index": 1
+    },
+    {
+      "id": "guardrails-2",
+      "doc_id": "guardrails",
+      "title": "PRISM Guardrails",
+      "archive": "neural",
+      "entities": [
+        "Guardrails",
+        "input rail",
+        "output rail",
+        "InputSafety",
+        "GroundedOutput"
+      ],
+      "text": "The input rail runs before any retrieval. It blocks an empty question. It blocks a question longer than 400 characters. It blocks wording that tries to override the observatory, such as a request to discard earlier rules or to print a hidden prompt. It blocks personal data in the question: an email address, a phone number with separators, a long card-shaped number, or a three-two-four digit identifier. A blocked question returns a short refusal and an empty citation list. The archives are not searched.\n\nThe output rail runs after synthesis. It walks each cited sentence and keeps the sentence only when the same words appear in the passage named by that citation. A sentence that fails is removed, and the citation count is rewritten. If no cited sentence survives, the answer is replaced with a refusal from the output rail. A deliberate refusal, the one that says the archives do not contain grounded material, is allowed through. The rail does not invent a new fact to fill a gap.",
+      "index": 2
+    },
+    {
+      "id": "guardrails-3",
+      "doc_id": "guardrails",
+      "title": "PRISM Guardrails",
+      "archive": "neural",
+      "entities": [
+        "Guardrails",
+        "input rail",
+        "output rail",
+        "InputSafety",
+        "GroundedOutput"
+      ],
+      "text": "The output rail runs after synthesis. It walks each cited sentence and keeps the sentence only when the same words appear in the passage named by that citation. A sentence that fails is removed, and the citation count is rewritten. If no cited sentence survives, the answer is replaced with a refusal from the output rail. A deliberate refusal, the one that says the archives do not contain grounded material, is allowed through. The rail does not invent a new fact to fill a gap.\n\nThe browser observatory applies the same decisions so the live page matches the Python package. The library call itself stays in Python, because that is where Guard.validate runs.",
+      "index": 3
     },
     {
       "id": "hubble-0",
