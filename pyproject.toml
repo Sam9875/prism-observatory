@@ -1,0 +1,29 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "prism-observatory"
+version = "1.0.0"
+description = "Multi-agent RAG observatory using LangChain and LangGraph"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "langchain-core>=0.3.60",
+  "langchain-text-splitters>=0.3.8",
+  "langgraph>=0.4.0",
+  "rank-bm25>=0.2.2",
+]
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+
+[project.scripts]
+prism = "prism.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
