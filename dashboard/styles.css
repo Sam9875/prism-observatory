@@ -27,7 +27,7 @@ body {
 }
 button, input { font: inherit; color: inherit; }
 button { cursor: pointer; }
-.app { display: grid; grid-template-columns: 228px 1fr; min-height: 100vh; }
+.app { display: grid; grid-template-columns: 252px 1fr; min-height: 100vh; }
 .rail {
   position: sticky;
   top: 0;
@@ -64,13 +64,19 @@ button { cursor: pointer; }
   border: 0;
   border-left: 2px solid transparent;
   color: var(--muted);
-  padding: 10px 12px;
+  padding: 8px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
 }
+.rail nav button span { color: var(--text); font-weight: 520; }
+.rail nav button small { color: var(--muted); font-size: 12px; }
 .rail nav button.active {
-  color: var(--paper);
   border-left-color: var(--amber);
   background: #23281e;
 }
+.rail nav button.active small { color: #d9c7a2; }
+.rail nav button:hover { background: #1e241b; }
 .rail-foot {
   margin-top: auto;
   color: var(--muted);
@@ -125,6 +131,72 @@ h1 {
 }
 .lenses button.on, .filters button.on { border-color: var(--amber); color: var(--amber); }
 .chips button { text-align: left; color: #ddd6c4; border-style: dashed; }
+.chips button:hover, .filters button:hover { border-color: var(--amber); }
+.path {
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin: 18px 0 8px;
+  padding: 0;
+}
+.path li {
+  border: 1px solid var(--line);
+  background: rgba(27, 32, 24, 0.75);
+  padding: 10px 12px 12px;
+  min-height: 78px;
+}
+.path b {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  margin-right: 6px;
+  border-radius: 99px;
+  background: var(--amber);
+  color: #1a1408;
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 12px;
+}
+.path span { display: block; margin-top: 6px; color: var(--muted); font-size: 13px; line-height: 1.35; }
+.lens-pick { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-top: 14px; }
+.lens-pick button {
+  text-align: left;
+  background: #161b14;
+  border: 1px solid var(--line);
+  padding: 12px;
+  min-height: 92px;
+}
+.lens-pick button b { display: block; font-family: Fraunces, Georgia, serif; font-size: 20px; font-weight: 520; }
+.lens-pick button span { display: block; margin-top: 4px; color: var(--muted); font-size: 13px; line-height: 1.35; }
+.lens-pick button.on { border-color: var(--amber); background: #2a2418; }
+.lens-pick button.on b { color: var(--amber); }
+.group-label {
+  width: 100%;
+  margin: 8px 0 0;
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--amber);
+}
+.paper { position: relative; }
+.stamp {
+  float: right;
+  margin: 0 0 8px 12px;
+  border: 1px solid currentColor;
+  padding: 4px 8px;
+  font-family: "IBM Plex Mono", ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.stamp.ok { color: #2f6b45; }
+.stamp.stop { color: #9a3d32; }
+.hint { color: var(--muted); font-size: 13px; margin: 8px 0 0; }
+.legend { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+.legend div { border: 1px solid var(--line); padding: 8px 10px; }
+.legend b { color: var(--amber); font-family: "IBM Plex Mono", ui-monospace, monospace; font-weight: 500; }
 .paper {
   background: var(--paper);
   color: var(--inktext);
@@ -239,7 +311,8 @@ a { color: var(--amber); }
   .rail nav button.active { border-bottom-color: var(--amber); }
   .rail-foot { display: none; }
   main { padding: 18px 14px 48px; }
-  .composer, .layout, .metrics, .trio { grid-template-columns: 1fr; }
+  .composer, .layout, .metrics, .trio, .path, .lens-pick, .legend { grid-template-columns: 1fr; }
+  .rail nav button small { display: none; }
   .composer .run { min-height: 48px; }
   h1 { font-size: 40px; }
 }
