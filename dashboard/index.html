@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>PRISM Observatory</title>
+  <meta name="description" content="A multi-agent RAG observatory. LangChain retrieval, a LangGraph answer path, and a live archive you can question in the browser.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,520;0,9..144,640;1,9..144,520&family=IBM+Plex+Mono:wght@400;500&family=Outfit:wght@380;520;640&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="app">
+    <aside class="rail">
+      <div class="mark">
+        <svg class="sigil" viewBox="0 0 48 48" aria-hidden="true">
+          <path d="M24 4 L44 40 H4 Z" fill="none" stroke="currentColor" stroke-width="1.4"/>
+          <path d="M24 14 L36 38 H12 Z" fill="none" stroke="currentColor" stroke-width="1.4"/>
+          <path d="M24 24 L30 38 H18 Z" fill="#e2a14a"/>
+        </svg>
+        <div>
+          <strong>PRISM</strong>
+          <em>Observatory</em>
+        </div>
+      </div>
+      <nav aria-label="Sections">
+        <button type="button" data-view="ask" class="active">Ask</button>
+        <button type="button" data-view="lenses">Lenses</button>
+        <button type="button" data-view="graph">Graph</button>
+        <button type="button" data-view="archives">Archives</button>
+        <button type="button" data-view="blueprint">Blueprint</button>
+        <button type="button" data-view="bench">Bench</button>
+      </nav>
+      <p class="rail-foot" id="rail-status">Loading the archives…</p>
+    </aside>
+    <main id="stage" tabindex="-1"></main>
+  </div>
+  <noscript>
+    <p>PRISM searches the archives in your browser and needs JavaScript to do it.</p>
+  </noscript>
+  <script src="engine.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
