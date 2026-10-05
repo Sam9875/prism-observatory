@@ -107,3 +107,20 @@ def test_full_corpus_jwst_and_amoc():
     amoc = run_lens(built, "What is the AMOC, and why is a slowdown discussed?", "aurora")
     assert "NIRCam" in webb.answer or "MIRI" in webb.answer
     assert "Atlantic" in amoc.answer
+
+
+def test_flow_dashboard_matches_a_run():
+    import shutil
+    import subprocess
+
+    node = shutil.which("node")
+    if node is None:
+        pytest.skip("node is not installed")
+    completed = subprocess.run(
+        [node, str(ROOT / "tests" / "dashboard_flow.test.cjs")],
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert completed.returncode == 0, completed.stdout + completed.stderr

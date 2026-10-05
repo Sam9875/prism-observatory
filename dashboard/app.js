@@ -48,6 +48,8 @@
     view: "ask",
     lens: "aurora",
     question: "",
+    flowLane: "system",
+    flowStep: "",
     archive: null,
     index: null,
     error: "",
@@ -214,6 +216,18 @@
       '<section class="note" style="margin-top:16px"><p>In Python, LangChain supplies the splitter, the Document shape, the Embeddings interface, and the in-memory vector store. The browser twin uses the same fusion constant, 1/(60+rank), and the same grade rules. Neither one calls a hosted chat model.</p></section>';
   }
 
+  function flowTrace() {
+    return window.PrismFlow.traceFor(state.last, state.flowLane);
+  }
+
+  function renderFlow() {
+    stage.innerHTML = window.PrismFlow.render({
+      lane: state.flowLane,
+      selected: state.flowStep,
+      trace: flowTrace(),
+    });
+  }
+
   function renderGraph() {
     const aurora = state.last && state.last.lenses
       ? state.last.lenses.find(function (item) { return item.lens === "aurora"; })
@@ -350,6 +364,7 @@
       return;
     }
     if (state.view === "ask") renderAsk();
+    else if (state.view === "flow") renderFlow();
     else if (state.view === "lenses") renderLenses();
     else if (state.view === "graph") renderGraph();
     else if (state.view === "rails") renderRails();
@@ -370,6 +385,24 @@
     if (current) state.question = current.value;
     const view = event.target.closest("[data-view]");
     if (view) { setView(view.getAttribute("data-view")); return; }
+    const flowLane = event.target.closest("[data-flow-lane]");
+    if (flowLane) {
+      state.flowLane = flowLane.getAttribute("data-flow-lane");
+      state.flowStep = "";
+      setView("flow");
+      return;
+    }
+    const flowStep = event.target.closest("[data-flow-step]");
+    if (flowStep) {
+      state.flowStep = flowStep.getAttribute("data-flow-step");
+      const lane = flowStep.getAttribute("data-flow-step");
+      if (lane === "lane-glass") state.flowLane = "glass";
+      if (lane === "lane-crystal") state.flowLane = "crystal";
+      if (lane === "lane-aurora") state.flowLane = "aurora";
+      if (lane.indexOf("lane-") === 0) state.flowStep = "";
+      setView("flow");
+      return;
+    }
     const lens = event.target.closest("[data-lens]");
     if (lens) { state.lens = lens.getAttribute("data-lens"); render(); return; }
     const sample = event.target.closest("[data-sample]");

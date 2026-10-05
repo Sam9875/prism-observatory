@@ -280,6 +280,55 @@ th { color: var(--muted); font-weight: 520; font-size: 12px; letter-spacing: 0.0
   padding: 14px;
   color: var(--coral);
 }
+.flow-switch { display: flex; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+.flow-switch button {
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--paper);
+  border-radius: 999px;
+  padding: 6px 12px;
+}
+.flow-switch button.on { border-color: var(--amber); color: var(--amber); }
+.flow-layout { display: grid; grid-template-columns: minmax(0, 1.1fr) minmax(260px, 0.9fr); gap: 16px; align-items: start; }
+.flow-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 0; }
+.flow-list > li + li::before {
+  content: "";
+  display: block;
+  width: 8px;
+  height: 8px;
+  margin: 6px auto;
+  border-right: 2px solid var(--amber);
+  border-bottom: 2px solid var(--amber);
+  transform: rotate(45deg);
+}
+.station.ran b::after { content: " · ran"; color: var(--amber); font-size: 12px; font-weight: 500; }
+.station {
+  width: 100%;
+  text-align: left;
+  display: grid;
+  gap: 4px;
+  border: 1px solid var(--line);
+  background: #171c14;
+  color: var(--paper);
+  padding: 10px 12px;
+}
+.station small { color: var(--muted); }
+.station.ran { border-color: var(--amber); }
+.station.on { background: #2a2416; }
+.flow-split p { color: var(--muted); margin: 8px 0; }
+.flow-choices { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.flow-detail {
+  position: sticky;
+  top: 12px;
+  border: 1px solid var(--line);
+  background: #141812;
+  padding: 14px;
+}
+.flow-detail h2 { font-family: Fraunces, Georgia, serif; font-weight: 520; margin: 0 0 8px; }
+.flow-detail dl { display: grid; gap: 8px; margin: 0; }
+.flow-detail dt { color: var(--amber); font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase; }
+.flow-detail dd { margin: 0; }
+.flow-quiet { color: var(--muted); }
 .blueprint { display: grid; gap: 12px; max-width: 82ch; }
 .blueprint h2 { font-family: Fraunces, Georgia, serif; font-weight: 520; margin: 18px 0 6px; }
 code, .mono { font-family: "IBM Plex Mono", ui-monospace, monospace; font-size: 0.92em; }
@@ -311,7 +360,8 @@ a { color: var(--amber); }
   .rail nav button.active { border-bottom-color: var(--amber); }
   .rail-foot { display: none; }
   main { padding: 18px 14px 48px; }
-  .composer, .layout, .metrics, .trio, .path, .lens-pick, .legend { grid-template-columns: 1fr; }
+  .composer, .layout, .metrics, .trio, .path, .lens-pick, .legend, .flow-layout, .flow-choices { grid-template-columns: 1fr; }
+  .flow-detail { position: static; }
   .rail nav button small { display: none; }
   .composer .run { min-height: 48px; }
   h1 { font-size: 40px; }
