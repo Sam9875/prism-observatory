@@ -4,7 +4,7 @@ Three archives. Three lenses. Answers that cite the passage they came from.
 
 PRISM is a retrieval-augmented generation workbench. It reads a local corpus, searches with a lexical index and a dense index, and answers only from the passages it kept. The long path, Aurora, is a real [LangGraph](https://github.com/langchain-ai/langgraph) state machine: guard the question, route, plan, retrieve, grade, rewrite, synthesize, verify, then guard the answer. [Guardrails AI](https://github.com/guardrails-ai/guardrails) runs those two checks in Python. The browser dashboard applies the same rails with no API key.
 
-**Live dashboard:** https://topaz-ritual-z5y4.here.now/
+**Live dashboard:** https://sam9875.github.io/prism-observatory/
 
 **Repository:** https://github.com/Sam9875/prism-observatory
 
