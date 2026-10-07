@@ -50,6 +50,7 @@
     question: "",
     flowLane: "system",
     flowStep: "",
+    arch: "guard",
     archive: null,
     index: null,
     error: "",
@@ -228,6 +229,10 @@
     });
   }
 
+  function renderMap() {
+    stage.innerHTML = window.PrismMap.render(state.arch);
+  }
+
   function renderGraph() {
     const aurora = state.last && state.last.lenses
       ? state.last.lenses.find(function (item) { return item.lens === "aurora"; })
@@ -364,6 +369,7 @@
       return;
     }
     if (state.view === "ask") renderAsk();
+    else if (state.view === "map") renderMap();
     else if (state.view === "flow") renderFlow();
     else if (state.view === "lenses") renderLenses();
     else if (state.view === "graph") renderGraph();
@@ -383,6 +389,13 @@
   document.body.addEventListener("click", function (event) {
     const current = document.getElementById("question");
     if (current) state.question = current.value;
+    const arch = event.target.closest("[data-arch]");
+    if (arch) {
+      state.arch = arch.getAttribute("data-arch");
+      state.view = "map";
+      setView("map");
+      return;
+    }
     const view = event.target.closest("[data-view]");
     if (view) { setView(view.getAttribute("data-view")); return; }
     const flowLane = event.target.closest("[data-flow-lane]");

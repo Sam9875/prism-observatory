@@ -13,6 +13,7 @@ PRISM is a retrieval-augmented generation workbench. It reads a local corpus, se
 | View | What it shows |
 | --- | --- |
 | Ask | Run Glass, Crystal, Aurora, or all three. Read the cited answer, the chunks, and the node trace. |
+| Diagram | The pieces of the desk, and the arrows between them. Click a box to read what it does. |
 | Flow | Where a question goes. Each step says what comes in, what happens, and what goes out. Ask first, then the steps that ran are marked. |
 | Lenses | How the short path, the expanded path, and the LangGraph path differ. |
 | Graph | The Aurora state machine, including the input and output rails, lit with the nodes from the last run. |
