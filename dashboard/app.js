@@ -60,6 +60,7 @@
     entity: "",
     bench: null,
     focused: false,
+    askError: "",
   };
 
   const stage = document.getElementById("stage");
@@ -146,14 +147,27 @@
     return '<span class="stamp ok">Cited</span>';
   }
 
+  function missed(result) {
+    return result.route !== "blocked" && !result.supported;
+  }
+
   function resultCard(result) {
     const metrics = result.metrics || {};
     const kept = metrics.relevant || 0;
     const fetched = metrics.retrieved || 0;
+    const headline = result.route === "blocked"
+      ? "Stopped"
+      : (missed(result) ? "Not in the library" : esc(result.lens) + " · " + esc(routeName(result.route)));
+    const answer = missed(result)
+      ? "Nothing in the notes matches that. This page can answer flights such as Apollo 11, JWST, Hubble, and Ingenuity; Earth topics such as the AMOC and coral bleaching; and how this search works. Tap a question below."
+      : answerHtml(result.answer);
+    const hint = result.supported
+      ? "A number is a source. Select it to jump to that note."
+      : "The questions under this answer are the ones the notes can cover.";
     return railBanner(result) + '<article class="paper">' + stamp(result) +
-      "<h3>" + esc(result.lens) + " · " + esc(routeName(result.route)) + "</h3>" +
-      '<p class="answer-log">' + answerHtml(result.answer) + "</p>" +
-      '<p class="hint">A number is a source. Select it to jump to that note.</p></article>' +
+      "<h3>" + headline + "</h3>" +
+      '<p class="answer-log">' + answer + "</p>" +
+      '<p class="hint">' + hint + "</p></article>" +
       '<div class="metrics">' +
       metric("Question", routeName(result.route)) +
       metric("Backed by notes", result.supported ? "Yes" : "No") +
@@ -185,26 +199,47 @@
     }).join("") + "</div>";
   }
 
+  function showRead() {
+    const read = document.getElementById("read");
+    if (!read) return;
+    const rail = document.querySelector(".rail");
+    const box = rail ? rail.getBoundingClientRect() : null;
+    const covers = box && box.width > window.innerWidth * 0.7;
+    const offset = covers ? box.height + 20 : 12;
+    const top = window.scrollY + read.getBoundingClientRect().top - offset;
+    window.scrollTo({ top: Math.max(0, top), behavior: "auto" });
+  }
+
   function renderAsk() {
+    const path = '<ol class="path"><li><b>1</b> Guard<span>Stop overrides and personal data before any search.</span></li><li><b>2</b> Search<span>Look in a word index and a meaning index.</span></li><li><b>3</b> Grade<span>Keep notes that match. Drop the rest.</span></li><li><b>4</b> Cite<span>Every sentence in the answer points at a note.</span></li></ol>';
     let body = "";
     if (!state.last) {
-      body = '<ol class="path"><li><b>1</b> Guard<span>Stop overrides and personal data before any search.</span></li><li><b>2</b> Search<span>Look in a word index and a meaning index.</span></li><li><b>3</b> Grade<span>Keep notes that match. Drop the rest.</span></li><li><b>4</b> Cite<span>Every sentence in the answer points at a note.</span></li></ol>' +
-        '<p class="lede">Ask about a flight, about how this desk works, or about Earth. If the library has no note, it says so.</p>' +
-        sampleGroups();
+      body = '<h2 class="ask-next">Questions that work</h2>' +
+        '<p class="hint">Tap one. Flights, Earth, and how this page searches are in the notes. The rest of the web is not.</p>' +
+        sampleGroups() + path;
     } else {
-      body = state.last.lenses ? state.last.lenses.map(resultCard).join("") : resultCard(state.last);
-      body += '<p class="group-label">Try another</p>' + sampleGroups();
+      const results = state.last.lenses || [state.last];
+      const anyCited = results.some(function (result) { return result.supported; });
+      body = '<div id="read">' + results.map(resultCard).join("") + "</div>" +
+        '<h2 class="ask-next">' + (anyCited ? "Try another" : "Try one of these") + "</h2>" +
+        sampleGroups();
     }
+    const lede = state.last
+      ? ""
+      : '<p class="lede">This is not a web search. Press Search, or tap a question below. The notes cover Apollo 11, JWST, Hubble, Mars, the AMOC, coral, and how this page searches.</p>';
+    const failure = state.askError ? '<p class="error" id="read">' + esc(state.askError) + "</p>" : "";
     stage.innerHTML = '<p class="kicker">The library answers only from its own notes</p><h1>' + (state.last ? "Here is the read." : "Ask the library.") + "</h1>" +
+      lede +
       '<form class="composer" id="ask-form"><label class="visually-hidden" for="question">Question</label>' +
-      '<input id="question" name="question" autocomplete="off" placeholder="Try: Where did Eagle land?" value="' + esc(state.question) + '">' +
-      '<button class="run" type="submit">Ask</button></form>' +
-      lensPicker() + body;
+      '<input id="question" name="question" autocomplete="off" placeholder="Where did Eagle land?" value="' + esc(state.question) + '">' +
+      '<button class="run" type="submit">Search</button></form>' +
+      failure + body + lensPicker();
     const input = document.getElementById("question");
     if (!state.focused) {
       input.focus();
       state.focused = true;
     }
+    if (state.last || state.askError) showRead();
   }
 
   function renderLenses() {
@@ -381,8 +416,18 @@
 
   function runQuestion(question) {
     state.question = question;
-    const outcome = window.PrismEngine.ask(state.index, question, state.lens === "all" ? "all" : state.lens);
-    state.last = outcome;
+    state.askError = "";
+    try {
+      if (!state.index || !window.PrismEngine) {
+        state.last = null;
+        state.askError = "The notes are still loading. Wait a second and search again.";
+      } else {
+        state.last = window.PrismEngine.ask(state.index, question, state.lens === "all" ? "all" : state.lens);
+      }
+    } catch (error) {
+      state.last = null;
+      state.askError = "The search failed. " + (error && error.message ? error.message : "Unknown error");
+    }
     render();
   }
 
@@ -488,7 +533,7 @@
       if (presetLens === "glass" || presetLens === "crystal" || presetLens === "aurora" || presetLens === "all") {
         state.lens = presetLens;
       }
-      const preset = params.get("q");
+      const preset = params.get("q") || params.get("question");
       if (preset) runQuestion(preset);
       else render();
     })

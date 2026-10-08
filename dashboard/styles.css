@@ -194,6 +194,12 @@ h1 {
 .stamp.ok { color: #2f6b45; }
 .stamp.stop { color: #9a3d32; }
 .hint { color: var(--muted); font-size: 13px; margin: 8px 0 0; }
+.ask-next {
+  font-family: Fraunces, Georgia, serif;
+  font-weight: 520;
+  font-size: 28px;
+  margin: 22px 0 4px;
+}
 .legend { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
 .legend div { border: 1px solid var(--line); padding: 8px 10px; }
 .legend b { color: var(--amber); font-family: "IBM Plex Mono", ui-monospace, monospace; font-weight: 500; }
